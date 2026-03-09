@@ -38,6 +38,10 @@ inputs:
     description: 'Git repository URL'
     required: false
     default: 'https://github.com/flutter/flutter.git'
+  precache-args:
+    description: 'Additional arguments for flutter precache when git-source is git'
+    required: false
+    default: ''
   dry-run:
     description: 'Only resolve version, do not install'
     required: false

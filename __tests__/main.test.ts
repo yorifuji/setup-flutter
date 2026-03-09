@@ -78,6 +78,7 @@ function setupDefaultMocks() {
 		"fvm-flavor": "",
 		"git-source": "release",
 		"git-source-url": "https://github.com/flutter/flutter.git",
+		"precache-args": "",
 	};
 	const boolInputs: Record<string, boolean> = {
 		"cache-sdk": true,
@@ -256,7 +257,13 @@ describe("main run()", () => {
 		await run();
 
 		expect(resolveGitRef).toHaveBeenCalled();
-		expect(installFromGit).toHaveBeenCalled();
+		expect(installFromGit).toHaveBeenCalledWith(
+			"https://github.com/flutter/flutter.git",
+			"my-branch",
+			"/opt/hostedtoolcache/flutter/3.29.3-stable-x64",
+			"hash1",
+			[],
+		);
 		expect(installFromArchive).not.toHaveBeenCalled();
 	});
 
@@ -345,6 +352,37 @@ describe("main run()", () => {
 		expect(installFromGit).not.toHaveBeenCalled();
 	});
 
+	it("passes precache args to git install", async () => {
+		const { inputs } = setupDefaultMocks();
+		inputs["git-source"] = "git";
+		inputs["precache-args"] = "--ios --web";
+		vi.mocked(parseVersionSpec).mockReturnValue({ type: "any" });
+
+		await run();
+
+		expect(installFromGit).toHaveBeenCalledWith(
+			"https://github.com/flutter/flutter.git",
+			"stable",
+			"/opt/hostedtoolcache/flutter/3.29.3-stable-x64",
+			"hash1",
+			["--ios", "--web"],
+		);
+	});
+
+	it("skips git install when resolved commit hash is empty", async () => {
+		const { inputs } = setupDefaultMocks();
+		inputs["git-source"] = "git";
+		vi.mocked(parseVersionSpec).mockReturnValue({ type: "any" });
+		vi.mocked(resolveGitRef).mockResolvedValue({
+			commitHash: "",
+			version: "3.29.3",
+		});
+
+		await run();
+
+		expect(installFromGit).not.toHaveBeenCalled();
+	});
+
 	it("reads version file when flutter-version is empty", async () => {
 		const { inputs } = setupDefaultMocks();
 		inputs["flutter-version-file"] = "pubspec.yaml";
@@ -414,6 +452,15 @@ describe("main run()", () => {
 		await run();
 
 		expect(restorePubCache).not.toHaveBeenCalled();
+	});
+
+	it("does not log pub cache miss on pub cache hit", async () => {
+		setupDefaultMocks();
+		vi.mocked(restorePubCache).mockResolvedValue(true);
+
+		await run();
+
+		expect(info).not.toHaveBeenCalledWith("Pub cache miss");
 	});
 
 	it("calls setFailed with String for non-Error thrown", async () => {

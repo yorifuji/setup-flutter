@@ -131,9 +131,16 @@ Install from a git repository instead of release archives:
     git-source: git
     git-source-url: https://github.com/user/flutter-fork.git
     flutter-version: my-branch
+
+# Limit precache artifacts
+- uses: koji-1009/setup-flutter@v1
+  with:
+    git-source: git
+    flutter-version: stable
+    precache-args: --ios --web
 ```
 
-> **Note:** Specifying a commit hash as `flutter-version` with `git-source: git` requires a full clone (no `--depth 1`), which is slower. When using git source, `dart-version` output is `unknown` since it is not available from the git metadata.
+> **Note:** Specifying a commit hash as `flutter-version` with `git-source: git` requires a full clone (no `--depth 1`), which is slower. When using git source, `dart-version` output is `unknown` since it is not available from the git metadata. `precache-args` is only used with `git-source: git`.
 
 ### China mirror
 

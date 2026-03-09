@@ -255,4 +255,19 @@ describe("installFromGit", () => {
 		expect(precacheCall).toBeDefined();
 		expect(precacheCall?.[1]).toEqual(["precache"]);
 	});
+
+	it("passes configured precache args", async () => {
+		await installFromGit(
+			"https://github.com/flutter/flutter.git",
+			"stable",
+			"/opt/flutter",
+			"abc123def4567890abc123def4567890abc123de",
+			["--ios", "--web"],
+		);
+		expect(exec).toHaveBeenCalledWith(expect.stringContaining("flutter"), [
+			"precache",
+			"--ios",
+			"--web",
+		]);
+	});
 });

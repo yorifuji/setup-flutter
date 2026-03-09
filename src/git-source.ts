@@ -71,6 +71,7 @@ export async function installFromGit(
 	ref: string,
 	sdkPath: string,
 	commitHash: string,
+	precacheArgs: string[] = [],
 ): Promise<void> {
 	info(`Cloning Flutter from ${url} (ref: ${ref})...`);
 	if (FULL_HASH_PATTERN.test(commitHash) && ref === commitHash) {
@@ -84,5 +85,5 @@ export async function installFromGit(
 
 	info("Running flutter precache...");
 	const flutterBin = join(sdkPath, "bin", "flutter");
-	await exec(flutterBin, ["precache"]);
+	await exec(flutterBin, ["precache", ...precacheArgs]);
 }

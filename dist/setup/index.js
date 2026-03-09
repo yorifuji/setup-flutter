@@ -60360,7 +60360,7 @@ async function resolveGitRef(url2, ref, manifest) {
   }
   throw new Error(`Could not resolve ref '${ref}' in ${url2}`);
 }
-async function installFromGit(url2, ref, sdkPath, commitHash) {
+async function installFromGit(url2, ref, sdkPath, commitHash, precacheArgs = []) {
   info(`Cloning Flutter from ${url2} (ref: ${ref})...`);
   if (FULL_HASH_PATTERN.test(commitHash) && ref === commitHash) {
     await exec("git", ["clone", url2, sdkPath]);
@@ -60370,7 +60370,7 @@ async function installFromGit(url2, ref, sdkPath, commitHash) {
   }
   info("Running flutter precache...");
   const flutterBin = (0, import_node_path2.join)(sdkPath, "bin", "flutter");
-  await exec(flutterBin, ["precache"]);
+  await exec(flutterBin, ["precache", ...precacheArgs]);
 }
 
 // src/installer.ts
@@ -60835,7 +60835,9 @@ async function run() {
     const cachePub = getBooleanInput("cache-pub");
     const gitSource = getInput("git-source") || "release";
     const gitSourceUrl = getInput("git-source-url") || "https://github.com/flutter/flutter.git";
+    const precacheArgsInput = getInput("precache-args");
     const dryRun = getBooleanInput("dry-run");
+    const precacheArgs = precacheArgsInput.split(/\s+/).map((arg) => arg.trim()).filter(Boolean);
     const platform2 = getPlatform();
     const arch2 = getArch(archInput || void 0);
     info(`Detected platform: ${platform2}/${arch2}`);
@@ -60946,7 +60948,13 @@ async function run() {
       if (gitSource === "release") {
         await installFromArchive(resolved, sdkDir, platform2);
       } else if (gitRef && gitCommitHash) {
-        await installFromGit(gitSourceUrl, gitRef, sdkDir, gitCommitHash);
+        await installFromGit(
+          gitSourceUrl,
+          gitRef,
+          sdkDir,
+          gitCommitHash,
+          precacheArgs
+        );
       }
       info(`Flutter SDK installed to ${sdkDir}`);
     }
