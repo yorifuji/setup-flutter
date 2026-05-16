@@ -42,6 +42,7 @@ export async function run(): Promise<void> {
 		const gitSource = getInput("git-source") || "release";
 		const gitSourceUrl =
 			getInput("git-source-url") || "https://github.com/flutter/flutter.git";
+		const gitSourcePrecache = getBooleanInput("git-source-precache");
 		const dryRun = getBooleanInput("dry-run");
 
 		const platform = getPlatform();
@@ -169,7 +170,13 @@ export async function run(): Promise<void> {
 			if (gitSource === "release") {
 				await installFromArchive(resolved, sdkDir, platform);
 			} else {
-				await installFromGit(gitSourceUrl, gitRef, sdkDir, gitCommitHash);
+				await installFromGit(
+					gitSourceUrl,
+					gitRef,
+					sdkDir,
+					gitCommitHash,
+					gitSourcePrecache,
+				);
 			}
 			info(`Flutter SDK installed to ${sdkDir}`);
 		}

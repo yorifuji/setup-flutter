@@ -82,6 +82,7 @@ function setupDefaultMocks() {
 	const boolInputs: Record<string, boolean> = {
 		"cache-sdk": true,
 		"cache-pub": true,
+		"git-source-precache": true,
 		"dry-run": false,
 	};
 
@@ -256,8 +257,35 @@ describe("main run()", () => {
 		await run();
 
 		expect(resolveGitRef).toHaveBeenCalled();
-		expect(installFromGit).toHaveBeenCalled();
+		expect(installFromGit).toHaveBeenCalledWith(
+			"https://github.com/flutter/flutter.git",
+			"my-branch",
+			"/opt/hostedtoolcache/flutter/3.29.3-stable-x64",
+			"hash1",
+			true,
+		);
 		expect(installFromArchive).not.toHaveBeenCalled();
+	});
+
+	it("passes git-source-precache false to git install", async () => {
+		const { boolInputs, inputs } = setupDefaultMocks();
+		inputs["git-source"] = "git";
+		inputs["flutter-version"] = "my-branch";
+		boolInputs["git-source-precache"] = false;
+		vi.mocked(parseVersionSpec).mockReturnValue({
+			type: "ref",
+			ref: "my-branch",
+		});
+
+		await run();
+
+		expect(installFromGit).toHaveBeenCalledWith(
+			"https://github.com/flutter/flutter.git",
+			"my-branch",
+			"/opt/hostedtoolcache/flutter/3.29.3-stable-x64",
+			"hash1",
+			false,
+		);
 	});
 
 	it("uses git mode with exact version spec", async () => {

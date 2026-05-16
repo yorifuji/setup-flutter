@@ -296,4 +296,19 @@ describe("installFromGit", () => {
 		expect(precacheCall).toBeDefined();
 		expect(precacheCall?.[1]).toEqual(["precache"]);
 	});
+
+	it("skips flutter precache when disabled", async () => {
+		await installFromGit(
+			"https://github.com/flutter/flutter.git",
+			"stable",
+			"/opt/flutter",
+			"abc123def4567890abc123def4567890abc123de",
+			false,
+		);
+		const calls = vi.mocked(exec).mock.calls;
+		const precacheCall = calls.find(
+			(c: unknown[]) => typeof c[0] === "string" && c[0].includes("flutter"),
+		);
+		expect(precacheCall).toBeUndefined();
+	});
 });
