@@ -13,6 +13,8 @@ import {
 } from "@actions/core";
 import {
 	getPubCachePaths,
+	isValidLocalSdk,
+	prepareSdkInstallPath,
 	pubCacheKey,
 	restorePubCache,
 	restoreSdkCache,
@@ -143,7 +145,10 @@ export async function run(): Promise<void> {
 		);
 
 		let sdkHit = false;
-		if (cacheSdk) {
+		if (isValidLocalSdk(sdkDir)) {
+			info("Flutter SDK found locally, skipping install");
+			sdkHit = true;
+		} else if (cacheSdk) {
 			info("Restoring SDK cache...");
 			const gitCacheConfig = gitCommitHash
 				? {
@@ -167,6 +172,7 @@ export async function run(): Promise<void> {
 		}
 
 		if (!sdkHit) {
+			await prepareSdkInstallPath(sdkDir);
 			if (gitSource === "release") {
 				await installFromArchive(resolved, sdkDir, platform);
 			} else {

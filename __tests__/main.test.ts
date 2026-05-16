@@ -12,6 +12,8 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getPubCachePaths,
+	isValidLocalSdk,
+	prepareSdkInstallPath,
 	pubCacheKey,
 	restorePubCache,
 	restoreSdkCache,
@@ -113,6 +115,8 @@ function setupDefaultMocks() {
 	vi.mocked(sdkCachePath).mockReturnValue(
 		"/opt/hostedtoolcache/flutter/3.29.3-stable-x64",
 	);
+	vi.mocked(isValidLocalSdk).mockReturnValue(false);
+	vi.mocked(prepareSdkInstallPath).mockResolvedValue();
 	vi.mocked(restoreSdkCache).mockResolvedValue(false);
 	vi.mocked(pubCacheKey).mockReturnValue("flutter-pub-abc123");
 	vi.mocked(restorePubCache).mockResolvedValue(false);
@@ -139,6 +143,9 @@ describe("main run()", () => {
 
 		expect(fetchManifest).toHaveBeenCalledWith("linux");
 		expect(resolveFromManifest).toHaveBeenCalled();
+		expect(prepareSdkInstallPath).toHaveBeenCalledWith(
+			"/opt/hostedtoolcache/flutter/3.29.3-stable-x64",
+		);
 		expect(installFromArchive).toHaveBeenCalled();
 		expect(setupPath).toHaveBeenCalled();
 		expect(addPath).toHaveBeenCalledWith("/home/runner/.pub-cache/bin");
@@ -200,6 +207,30 @@ describe("main run()", () => {
 		await run();
 
 		expect(restoreSdkCache).not.toHaveBeenCalled();
+	});
+
+	it("uses local SDK even when cache-sdk is false", async () => {
+		const { boolInputs } = setupDefaultMocks();
+		boolInputs["cache-sdk"] = false;
+		vi.mocked(isValidLocalSdk).mockReturnValue(true);
+
+		await run();
+
+		expect(restoreSdkCache).not.toHaveBeenCalled();
+		expect(installFromArchive).not.toHaveBeenCalled();
+		expect(prepareSdkInstallPath).not.toHaveBeenCalled();
+		expect(setOutput).toHaveBeenCalledWith("cache-sdk-hit", "true");
+	});
+
+	it("skips cache restore when local SDK already exists", async () => {
+		setupDefaultMocks();
+		vi.mocked(isValidLocalSdk).mockReturnValue(true);
+
+		await run();
+
+		expect(restoreSdkCache).not.toHaveBeenCalled();
+		expect(installFromArchive).not.toHaveBeenCalled();
+		expect(prepareSdkInstallPath).not.toHaveBeenCalled();
 	});
 
 	it("skips pub cache when cache-pub is false", async () => {
