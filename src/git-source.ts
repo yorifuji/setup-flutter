@@ -108,6 +108,7 @@ export async function installFromGit(
 	ref: string,
 	sdkPath: string,
 	commitHash: string,
+	precache = true,
 ): Promise<void> {
 	const gitOpts = {
 		env: { ...process.env, ...GIT_TIMEOUT_ENV } as Record<string, string>,
@@ -138,7 +139,11 @@ export async function installFromGit(
 		);
 	}
 
-	info("Running flutter precache...");
-	const flutterBin = join(sdkPath, "bin", "flutter");
-	await execWithTimeout(flutterBin, ["precache"], PRECACHE_TIMEOUT_MS);
+	if (precache) {
+		info("Running flutter precache...");
+		const flutterBin = join(sdkPath, "bin", "flutter");
+		await execWithTimeout(flutterBin, ["precache"], PRECACHE_TIMEOUT_MS);
+	} else {
+		info("Skipping flutter precache for git source");
+	}
 }

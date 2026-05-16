@@ -20241,47 +20241,6 @@ var require_coerce = __commonJS({
   }
 });
 
-// node_modules/semver/functions/truncate.js
-var require_truncate = __commonJS({
-  "node_modules/semver/functions/truncate.js"(exports2, module2) {
-    "use strict";
-    var parse2 = require_parse2();
-    var constants4 = require_constants6();
-    var SemVer = require_semver();
-    var truncate = (version3, truncation, options) => {
-      if (!constants4.RELEASE_TYPES.includes(truncation)) {
-        return null;
-      }
-      const clonedVersion = cloneInputVersion(version3, options);
-      return clonedVersion && doTruncation(clonedVersion, truncation);
-    };
-    var cloneInputVersion = (version3, options) => {
-      const versionStringToParse = version3 instanceof SemVer ? version3.version : version3;
-      return parse2(versionStringToParse, options);
-    };
-    var doTruncation = (version3, truncation) => {
-      if (isPrerelease(truncation)) {
-        return version3.version;
-      }
-      version3.prerelease = [];
-      switch (truncation) {
-        case "major":
-          version3.minor = 0;
-          version3.patch = 0;
-          break;
-        case "minor":
-          version3.patch = 0;
-          break;
-      }
-      return version3.format();
-    };
-    var isPrerelease = (type) => {
-      return type.startsWith("pre");
-    };
-    module2.exports = truncate;
-  }
-});
-
 // node_modules/semver/internal/lrucache.js
 var require_lrucache = __commonJS({
   "node_modules/semver/internal/lrucache.js"(exports2, module2) {
@@ -21316,7 +21275,6 @@ var require_semver2 = __commonJS({
     var lte = require_lte();
     var cmp = require_cmp();
     var coerce = require_coerce();
-    var truncate = require_truncate();
     var Comparator = require_comparator();
     var Range = require_range();
     var satisfies4 = require_satisfies();
@@ -21355,7 +21313,6 @@ var require_semver2 = __commonJS({
       lte,
       cmp,
       coerce,
-      truncate,
       Comparator,
       Range,
       satisfies: satisfies4,
@@ -60432,7 +60389,7 @@ async function resolveGitRef(url2, ref, manifest) {
   }
   throw new Error(`Could not resolve ref '${ref}' in ${url2}`);
 }
-async function installFromGit(url2, ref, sdkPath, commitHash) {
+async function installFromGit(url2, ref, sdkPath, commitHash, precache = true) {
   const gitOpts = {
     env: { ...process.env, ...GIT_TIMEOUT_ENV }
   };
@@ -60458,9 +60415,13 @@ async function installFromGit(url2, ref, sdkPath, commitHash) {
       gitOpts
     );
   }
-  info("Running flutter precache...");
-  const flutterBin = (0, import_node_path2.join)(sdkPath, "bin", "flutter");
-  await execWithTimeout(flutterBin, ["precache"], PRECACHE_TIMEOUT_MS);
+  if (precache) {
+    info("Running flutter precache...");
+    const flutterBin = (0, import_node_path2.join)(sdkPath, "bin", "flutter");
+    await execWithTimeout(flutterBin, ["precache"], PRECACHE_TIMEOUT_MS);
+  } else {
+    info("Skipping flutter precache for git source");
+  }
 }
 
 // src/installer.ts
@@ -60975,6 +60936,7 @@ async function run() {
     const cachePub = getBooleanInput("cache-pub");
     const gitSource = getInput("git-source") || "release";
     const gitSourceUrl = getInput("git-source-url") || "https://github.com/flutter/flutter.git";
+    const gitSourcePrecache = getBooleanInput("git-source-precache");
     const dryRun = getBooleanInput("dry-run");
     const platform2 = getPlatform();
     const arch2 = getArch(archInput || void 0);
@@ -61086,7 +61048,13 @@ async function run() {
       if (gitSource === "release") {
         await installFromArchive(resolved, sdkDir, platform2);
       } else {
-        await installFromGit(gitSourceUrl, gitRef, sdkDir, gitCommitHash);
+        await installFromGit(
+          gitSourceUrl,
+          gitRef,
+          sdkDir,
+          gitCommitHash,
+          gitSourcePrecache
+        );
       }
       info(`Flutter SDK installed to ${sdkDir}`);
     }
