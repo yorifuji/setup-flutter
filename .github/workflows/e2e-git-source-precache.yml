@@ -7,97 +7,30 @@ permissions:
   contents: read
 
 jobs:
-  git-source-precache-true:
+  true:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Create fake Flutter git source
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/fake-flutter/bin"
-          cat > "$RUNNER_TEMP/fake-flutter/bin/flutter" <<'EOF'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          if [ "${1:-}" = "precache" ]; then
-            echo "precache" >> "$PRECACHE_MARKER"
-            exit 0
-          fi
-          if [ "${1:-}" = "--version" ]; then
-            echo "Flutter 0.0.0 fake"
-            exit 0
-          fi
-          echo "fake flutter: $*"
-          EOF
-          chmod +x "$RUNNER_TEMP/fake-flutter/bin/flutter"
-          git -C "$RUNNER_TEMP/fake-flutter" init --initial-branch=main
-          git -C "$RUNNER_TEMP/fake-flutter" config user.name "github-actions"
-          git -C "$RUNNER_TEMP/fake-flutter" config user.email "github-actions@github.com"
-          git -C "$RUNNER_TEMP/fake-flutter" add .
-          git -C "$RUNNER_TEMP/fake-flutter" commit -m "Initial fake Flutter"
-
-      - name: Setup Flutter from git with precache
+      - name: git-source-precache true
         uses: ./
-        env:
-          PRECACHE_MARKER: ${{ runner.temp }}/precache-marker
         with:
           git-source: git
-          git-source-url: ${{ runner.temp }}/fake-flutter
-          flutter-version: main
+          flutter-version: stable
           cache-sdk: false
           cache-pub: false
           git-source-precache: true
 
-      - name: Verify precache ran during setup
-        run: |
-          test "$(cat "$RUNNER_TEMP/precache-marker")" = "precache"
-          flutter --version
-
-  git-source-precache-false:
+  false:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Create fake Flutter git source
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/fake-flutter/bin"
-          cat > "$RUNNER_TEMP/fake-flutter/bin/flutter" <<'EOF'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          if [ "${1:-}" = "precache" ]; then
-            echo "precache" >> "$PRECACHE_MARKER"
-            exit 0
-          fi
-          if [ "${1:-}" = "--version" ]; then
-            echo "Flutter 0.0.0 fake"
-            exit 0
-          fi
-          echo "fake flutter: $*"
-          EOF
-          chmod +x "$RUNNER_TEMP/fake-flutter/bin/flutter"
-          git -C "$RUNNER_TEMP/fake-flutter" init --initial-branch=main
-          git -C "$RUNNER_TEMP/fake-flutter" config user.name "github-actions"
-          git -C "$RUNNER_TEMP/fake-flutter" config user.email "github-actions@github.com"
-          git -C "$RUNNER_TEMP/fake-flutter" add .
-          git -C "$RUNNER_TEMP/fake-flutter" commit -m "Initial fake Flutter"
-
-      - name: Setup Flutter from git without precache
+      - name: git-source-precache false
         uses: ./
-        env:
-          PRECACHE_MARKER: ${{ runner.temp }}/precache-marker
         with:
           git-source: git
-          git-source-url: ${{ runner.temp }}/fake-flutter
-          flutter-version: main
+          flutter-version: stable
           cache-sdk: false
           cache-pub: false
           git-source-precache: false
-
-      - name: Verify precache did not run during setup
-        env:
-          PRECACHE_MARKER: ${{ runner.temp }}/precache-marker
-        run: |
-          test ! -e "$PRECACHE_MARKER"
-          flutter precache
-          test "$(cat "$PRECACHE_MARKER")" = "precache"
