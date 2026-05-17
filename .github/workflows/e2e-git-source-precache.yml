@@ -24,6 +24,13 @@ jobs:
           cache-pub: false
           git-source-precache: true
 
+      - name: Create multi-platform Flutter project
+        run: |
+          flutter create --platforms=android,ios,web,linux,windows,macos __test_app
+          cd __test_app
+          flutter pub get
+          ls -la android ios web linux windows macos
+
   precache-false:
     runs-on: ubuntu-latest
     steps:
@@ -37,3 +44,10 @@ jobs:
           cache-sdk: false
           cache-pub: false
           git-source-precache: false
+
+      - name: Create multi-platform Flutter project
+        run: |
+          flutter create --platforms=android,ios,web,linux,windows,macos __test_app
+          cd __test_app
+          flutter pub get
+          ls -la android ios web linux windows macos
