@@ -1,6 +1,9 @@
 name: E2E Git Source Precache
 
 on:
+  push:
+    branches:
+      - feature/git-source-precache-option
   workflow_dispatch:
 
 permissions:
