@@ -60310,6 +60310,13 @@ function sdkCachePath(version3, channel, arch2, gitConfig) {
 function isValidLocalSdk(sdkPath) {
   return (0, import_node_fs2.existsSync)((0, import_node_path.join)(sdkPath, "bin", "flutter"));
 }
+async function prepareSdkInstallPath(sdkPath) {
+  if (!(0, import_node_fs2.existsSync)(sdkPath) || isValidLocalSdk(sdkPath)) {
+    return;
+  }
+  info(`Removing incomplete Flutter SDK directory: ${sdkPath}`);
+  await rmRF(sdkPath);
+}
 async function restoreSdkCache(sdkPath, key) {
   if (isValidLocalSdk(sdkPath)) {
     info("Flutter SDK found locally, skipping cache restore");
@@ -61065,7 +61072,10 @@ async function run() {
       gitCommitHash ? { commitHash: gitCommitHash } : void 0
     );
     let sdkHit = false;
-    if (cacheSdk) {
+    if (isValidLocalSdk(sdkDir)) {
+      info("Flutter SDK found locally, skipping install");
+      sdkHit = true;
+    } else if (cacheSdk) {
       info("Restoring SDK cache...");
       const gitCacheConfig = gitCommitHash ? {
         commitHash: gitCommitHash,
@@ -61083,6 +61093,7 @@ async function run() {
       saveState("sdkCachePath", sdkDir);
     }
     if (!sdkHit) {
+      await prepareSdkInstallPath(sdkDir);
       if (gitSource === "release") {
         await installFromArchive(resolved, sdkDir, platform2);
       } else {

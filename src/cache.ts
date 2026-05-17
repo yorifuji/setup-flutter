@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { restoreCache, saveCache } from "@actions/cache";
 import { info, warning } from "@actions/core";
+import { rmRF } from "@actions/io";
 
 // --- SDK ---
 
@@ -38,6 +39,14 @@ export function sdkCachePath(
 
 export function isValidLocalSdk(sdkPath: string): boolean {
 	return existsSync(join(sdkPath, "bin", "flutter"));
+}
+
+export async function prepareSdkInstallPath(sdkPath: string): Promise<void> {
+	if (!existsSync(sdkPath) || isValidLocalSdk(sdkPath)) {
+		return;
+	}
+	info(`Removing incomplete Flutter SDK directory: ${sdkPath}`);
+	await rmRF(sdkPath);
 }
 
 export async function restoreSdkCache(

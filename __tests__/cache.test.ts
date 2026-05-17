@@ -2,10 +2,12 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { restoreCache, saveCache } from "@actions/cache";
 import { info, warning } from "@actions/core";
+import { rmRF } from "@actions/io";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getPubCachePaths,
 	isValidLocalSdk,
+	prepareSdkInstallPath,
 	pubCacheKey,
 	restorePubCache,
 	restoreSdkCache,
@@ -17,6 +19,7 @@ import {
 
 vi.mock("@actions/cache");
 vi.mock("@actions/core");
+vi.mock("@actions/io");
 vi.mock("node:fs", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("node:fs")>();
 	return {
@@ -108,6 +111,40 @@ describe("isValidLocalSdk", () => {
 	it("returns false when flutter binary does not exist", () => {
 		vi.mocked(existsSync).mockReturnValue(false);
 		expect(isValidLocalSdk("/opt/flutter")).toBe(false);
+	});
+});
+
+describe("prepareSdkInstallPath", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(rmRF).mockResolvedValue();
+	});
+
+	it("does nothing when SDK path does not exist", async () => {
+		vi.mocked(existsSync).mockReturnValue(false);
+
+		await prepareSdkInstallPath("/opt/flutter");
+
+		expect(rmRF).not.toHaveBeenCalled();
+	});
+
+	it("does nothing when SDK path is valid", async () => {
+		vi.mocked(existsSync).mockReturnValueOnce(true).mockReturnValueOnce(true);
+
+		await prepareSdkInstallPath("/opt/flutter");
+
+		expect(rmRF).not.toHaveBeenCalled();
+	});
+
+	it("removes incomplete SDK path before install", async () => {
+		vi.mocked(existsSync).mockReturnValueOnce(true).mockReturnValueOnce(false);
+
+		await prepareSdkInstallPath("/opt/flutter");
+
+		expect(rmRF).toHaveBeenCalledWith("/opt/flutter");
+		expect(info).toHaveBeenCalledWith(
+			"Removing incomplete Flutter SDK directory: /opt/flutter",
+		);
 	});
 });
 
