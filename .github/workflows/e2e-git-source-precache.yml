@@ -3,7 +3,7 @@ name: E2E Git Source Precache
 on:
   push:
     branches:
-      - feature/git-source-precache-option
+      - validation/git-source-precache-multiplatform
   workflow_dispatch:
 
 permissions:
@@ -24,12 +24,12 @@ jobs:
           cache-pub: false
           git-source-precache: true
 
-      - name: Create multi-platform Flutter project
+      - name: Verify multi-platform Flutter project
+        working-directory: e2e/multiplatform_app
         run: |
-          flutter create --platforms=android,ios,web,linux,windows,macos __test_app
-          cd __test_app
           flutter pub get
-          ls -la android ios web linux windows macos
+          flutter test
+          ls -la android ios web macos
 
   precache-false:
     runs-on: ubuntu-latest
@@ -45,9 +45,9 @@ jobs:
           cache-pub: false
           git-source-precache: false
 
-      - name: Create multi-platform Flutter project
+      - name: Verify multi-platform Flutter project
+        working-directory: e2e/multiplatform_app
         run: |
-          flutter create --platforms=android,ios,web,linux,windows,macos __test_app
-          cd __test_app
           flutter pub get
-          ls -la android ios web linux windows macos
+          flutter test
+          ls -la android ios web macos
